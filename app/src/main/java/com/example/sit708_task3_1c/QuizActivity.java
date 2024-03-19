@@ -104,21 +104,30 @@ public class QuizActivity extends AppCompatActivity {
             return;
         }
 
-        if (questionIndex == questions.length - 1) {
-            // Last question, show results
-            showResults();
-        } else {
-            // Check answer and proceed to next question
-            checkAnswer();
+        boolean isCorrect = checkAnswer();
+
+        if (questionIndex < questions.length - 1) {
+            // Not the last question yet
             submitButton.setText(R.string.next_question);
-            submitButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    nextQuestion();
-                }
+            submitButton.setOnClickListener(v -> {
+                // Reset options for next question
+                resetOptionViews();
+                questionIndex++;
+                updateQuestion();
+                submitButton.setText(R.string.submit); // Reset button text back to "Submit"
+
+                submitButton.setOnClickListener(view -> handleAnswerSubmission());
             });
+        } else if (questionIndex == questions.length - 1) {
+            // Last question
+            if (isCorrect || !isCorrect) {
+                // Show results after the last question is answered
+                submitButton.setText(R.string.finish_quiz);
+                submitButton.setOnClickListener(v -> showResults());
+            }
         }
     }
+
 
     private void onOptionSelected(int index) {
         selectedOptionIndex = index;
@@ -127,54 +136,36 @@ public class QuizActivity extends AppCompatActivity {
         }
     }
 
-    private void checkAnswer() {
-        //find the correct answer
+    private boolean checkAnswer() {
         int correctIndex = Arrays.asList(correctAnswers).indexOf(correctAnswers[questionIndex]);
-        //check the option is correct or not
         boolean isCorrect = options[questionIndex][selectedOptionIndex].equals(correctAnswers[questionIndex]);
 
-        for (TextView option : optionTextViews) {
-            option.setBackgroundColor(ContextCompat.getColor(this, android.R.color.transparent));
-            option.setClickable(false);
+        for (int i = 0; i < optionTextViews.length; i++) {
+            if (i == correctIndex) {
+                optionTextViews[i].setBackgroundColor(ContextCompat.getColor(this, R.color.correct_answer_color));
+            } else {
+                optionTextViews[i].setBackgroundColor(ContextCompat.getColor(this, android.R.color.transparent));
+            }
+
+            if (i == selectedOptionIndex && !isCorrect) {
+                optionTextViews[i].setBackgroundColor(ContextCompat.getColor(this, R.color.incorrect_answer_color));
+            }
+
+            optionTextViews[i].setClickable(false); // Prevent more selections
         }
 
-        // green background for correct answer
         if (isCorrect) {
-            optionTextViews[selectedOptionIndex].setBackgroundColor(ContextCompat.getColor(this, R.color.correct_answer_color));
             score++;
-        } else {
-            // red background for wrong answer
-            optionTextViews[selectedOptionIndex].setBackgroundColor(ContextCompat.getColor(this, R.color.incorrect_answer_color));
         }
 
-        // green background for correct answer
-        optionTextViews[correctIndex].setBackgroundColor(ContextCompat.getColor(this, R.color.correct_answer_color));
-
-        // check if this is the last question
-        if (questionIndex == questions.length - 1) {
-            submitButton.setText(R.string.finish_quiz);
-        } else {
-            submitButton.setText(R.string.next_question);
-            submitButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    nextQuestion();
-                }
-            });
-        }
+        return isCorrect;
     }
 
-
-    private void nextQuestion() {
-        questionIndex++;
-        updateQuestion();
-        submitButton.setText(R.string.submit);
-        submitButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                handleAnswerSubmission();
-            }
-        });
+    private void resetOptionViews() {
+        for (TextView optionView : optionTextViews) {
+            optionView.setBackgroundColor(ContextCompat.getColor(this, android.R.color.transparent)); // Reset background
+            optionView.setClickable(true); // Make them clickable again
+        }
     }
 
     private void updateQuestion() {
